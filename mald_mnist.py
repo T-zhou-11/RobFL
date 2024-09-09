@@ -9,7 +9,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch import nn
 from torch.utils.data import DataLoader
-
+import os
 import numpy as np
 import random
 import argparse
@@ -17,7 +17,7 @@ import argparse
 import byzantine
 import aggregation
 # import nd_aggregation
-from center import CenterLoss, mean_fea_center, center_filter, gmm_center_filter,gmm_grad_filter,median_grad_filter
+from center import CenterLoss, mean_fea_center, center_filter, gmm_center_filter,median_grad_filter
 from utils import pgd, get_cls_num_list
 from nets.cnn import CNNMnist
 
@@ -28,7 +28,7 @@ from nets.cnn import CNNMnist
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", help="dataset", default='mnist', type=str)
-    parser.add_argument("--datapath", help="path to dataset", default='./data', type=str)
+    parser.add_argument("--datapath", help="path to dataset", default='../dataset', type=str)
     parser.add_argument("--bias", help="degree of non-IID to assign data to workers", type=float, default=0.5)
     parser.add_argument("--net", help="net", default='cnn', type=str, choices=['mlr', 'cnn', 'fcnn'])
     parser.add_argument("--batch_size", help="batch size", default=256, type=int)
@@ -232,8 +232,8 @@ def main(args):
     if args.dataset == 'mnist':
         num_classes = 10
         input_size = (1, 1, 28, 28)
-        trainset = torchvision.datasets.MNIST(root=args.datapath, train=True, transform=transforms.ToTensor())
-        testset = torchvision.datasets.MNIST(root=args.datapath, train=False, transform=transforms.ToTensor())
+        trainset = torchvision.datasets.MNIST(root=args.datapath, download=True, train=True, transform=transforms.ToTensor())
+        testset = torchvision.datasets.MNIST(root=args.datapath, train=False, download=True, transform=transforms.ToTensor())
         train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=False, num_workers=4)
         test_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=4)
     else:
@@ -439,8 +439,8 @@ def main(args):
             print('## detected benign parties: ', detected_benign_parties)
             # calculate and print detect results
             outlier = [i for i in range(args.num_parties) if i not in detected_benign_parties]
-            dacc = len(detected_benign_parties) /  args.num_parties * 100.
-            print('## detection accuracy: %0.2f' % (dacc))
+            # dacc = len(detected_benign_parties) /  args.num_parties * 100.
+            # print('## detection accuracy: %0.2f' % (dacc))
             TN = len([i for i in outlier if i < args.num_attackers])
             TP = len([i for i in detected_benign_parties if i >= args.num_attackers])
             FP = len([i for i in outlier if i >= args.num_attackers])
@@ -520,7 +520,10 @@ def main(args):
                 'acc': test_accuracy,
                 'epoch': e,
             }
-            torch.save(state, 'experiments/mnist/ckpt/last_%s.t7' % (args.save))
+
+            save_path = f'experiments/mnist/ckpt/last_%s.t7' % (args.save)
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            torch.save(state, save_path)
 
 
 
